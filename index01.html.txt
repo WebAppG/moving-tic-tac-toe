@@ -11,18 +11,1294 @@ please create a one-page webapp board game called "Moving Tic-Tac-Toe".  the gam
 
 deepseek response:
 
-Here is a complete, one-page HTML document for the "Moving Tic-Tac-Toe" game board. You can run it directly in your browser to play.
 
+This is a complete HTML document that implements the "Moving Tic-Tac-Toe" board game, supporting both two-player and player-vs-computer modes with full settings and series tracking.
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moving Tic-Tac-Toe</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --text: #e0e0e0;
+            --accent: #e94560;
+            --board-bg: #f5f0e8;
+            --line-color: #3d2b1f;
+            --dot-color: #1a1a1a;
+            --overlay-bg: rgba(0, 0, 0, 0.8);
+            --toggle-on: #4caf84;
+            --toggle-off: #555;
+            --btn-primary: #e94560;
+            --btn-hover: #c0392b;
+            --btn-reset: #7f8c8d;
+        }
 
-Gameplay & Setup
-You'll control pieces on a 3x3 grid, aiming to align them while blocking your opponent. The game includes several key features to customize your experience.
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-Movement & Turns: Click or tap a piece you own to see valid moves (shown as black dots). Then click a highlighted spot to move. Players alternate turns.
+        body {
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
 
-Game Modes: Use the toggles to switch between two-player and single-player (vs. computer) modes. You can also set who moves first and enable a series mode to track wins across multiple games.
+        .app-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            max-width: 520px;
+            padding: 10px;
+        }
 
-Customization & Tracking: Before starting, choose unique colors for each player's pieces from the palette. The scoreboard tracks wins for both players, and the series record resets when you change the game mode.
+        /* Board Container */
+        .board-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 440px;
+            aspect-ratio: 1;
+            background: var(--board-bg);
+            border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+            padding: 16px;
+        }
 
+        .board-wrapper svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: default;
+        }
+
+        /* Info Bar */
+        .info-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 440px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .player-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+            transition: all 0.3s ease;
+            color: #fff;
+            min-width: 90px;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        }
+        .player-indicator.active-player {
+            transform: scale(1.06);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.5), 0 6px 20px rgba(0, 0, 0, 0.4);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.5), 0 6px 20px rgba(0, 0, 0, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.25), 0 6px 20px rgba(0, 0, 0, 0.4);
+            }
+        }
+        .player-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+        }
+        .score-badge {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .turn-arrow {
+            font-size: 1.5rem;
+            color: #fff;
+            animation: bounce 0.7s ease-in-out infinite;
+        }
+        @keyframes bounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .btn-reset {
+            background: var(--btn-reset);
+        }
+        .btn-reset:hover {
+            background: #95a5a6;
+            transform: translateY(-1px);
+        }
+        .btn-new-game {
+            background: #27ae60;
+        }
+        .btn-new-game:hover {
+            background: #2ecc71;
+            transform: translateY(-1px);
+        }
+        .btn-start {
+            background: var(--btn-primary);
+            font-size: 1.1rem;
+            padding: 14px 40px;
+        }
+        .btn-start:hover {
+            background: var(--btn-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 68, 96, 0.5);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--overlay-bg);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .overlay.hidden {
+            display: none;
+        }
+        .overlay-panel {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 28px 24px;
+            max-width: 460px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            color: var(--text);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .overlay-panel h2 {
+            text-align: center;
+            font-size: 1.5rem;
+            letter-spacing: 0.5px;
+            color: #fff;
+        }
+        .overlay-panel h3 {
+            font-size: 1rem;
+            color: #ccc;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        .color-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .color-swatch {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+        }
+        .color-swatch:hover:not(.disabled) {
+            transform: scale(1.12);
+            border-color: #fff;
+        }
+        .color-swatch.selected {
+            border-color: #fff;
+            box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.35);
+            transform: scale(1.08);
+        }
+        .color-swatch.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            filter: grayscale(40%);
+        }
+
+        /* Toggle */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .toggle-label {
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: #ddd;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--toggle-off);
+            border-radius: 28px;
+            transition: 0.3s;
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle-switch input:checked+.toggle-slider {
+            background: var(--toggle-on);
+        }
+        .toggle-switch input:checked+.toggle-slider::before {
+            transform: translateX(24px);
+        }
+
+        .record-display {
+            text-align: center;
+            font-size: 1rem;
+            color: #f0c040;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 10px 16px;
+        }
+        .record-display span {
+            color: #fff;
+        }
+
+        /* Game Over Banner */
+        .game-over-banner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 90;
+            background: var(--surface);
+            border-radius: 18px;
+            padding: 24px 28px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 16px 50px rgba(0, 0, 0, 0.8);
+            animation: popIn 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 260px;
+        }
+        @keyframes popIn {
+            from {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+        .game-over-banner.hidden {
+            display: none;
+        }
+        .game-over-banner .winner-text {
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+        .game-over-banner .btn {
+            margin: 0 auto;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .board-wrapper {
+                max-width: 92vw;
+                padding: 10px;
+                border-radius: 14px;
+            }
+            .player-indicator {
+                font-size: 0.8rem;
+                padding: 8px 12px;
+                min-width: 70px;
+            }
+            .player-dot {
+                width: 14px;
+                height: 14px;
+            }
+            .overlay-panel {
+                padding: 20px 14px;
+                gap: 12px;
+                border-radius: 16px;
+            }
+            .color-swatch {
+                width: 30px;
+                height: 30px;
+            }
+            .btn {
+                padding: 8px 16px;
+                font-size: 0.8rem;
+            }
+            .btn-start {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container" id="appContainer">
+        <!-- Info Bar -->
+        <div class="info-bar" id="infoBar">
+            <div class="player-indicator" id="topIndicator">
+                <span class="player-dot" id="topDot"></span>
+                <span>Top</span>
+                <span class="score-badge" id="topScore">0</span>
+            </div>
+            <span class="turn-arrow" id="turnArrow" style="opacity:0;">▼</span>
+            <div class="player-indicator" id="bottomIndicator">
+                <span class="player-dot" id="bottomDot"></span>
+                <span>Bottom</span>
+                <span class="score-badge" id="bottomScore">0</span>
+            </div>
+        </div>
+
+        <!-- Board -->
+        <div class="board-wrapper" id="boardWrapper">
+            <svg viewBox="0 0 420 420" id="boardSvg" xmlns="http://www.w3.org/2000/svg">
+                <!-- Board background -->
+                <rect x="4" y="4" width="412" height="412" rx="10" fill="#f5f0e8" stroke="none"/>
+
+                <!-- Outer square -->
+                <rect x="55" y="55" width="310" height="310" rx="4" fill="none" stroke="#3d2b1f" stroke-width="3.5" stroke-linecap="round"/>
+
+                <!-- Middle vertical line -->
+                <line x1="210" y1="55" x2="210" y2="365" stroke="#3d2b1f" stroke-width="2.8" stroke-linecap="round"/>
+
+                <!-- Middle horizontal line -->
+                <line x1="55" y1="210" x2="365" y2="210" stroke="#3d2b1f" stroke-width="2.8" stroke-linecap="round"/>
+
+                <!-- Diagonal lines -->
+                <line x1="55" y1="55" x2="365" y2="365" stroke="#3d2b1f" stroke-width="2.2" stroke-linecap="round" stroke-dasharray=""/>
+                <line x1="365" y1="55" x2="55" y2="365" stroke="#3d2b1f" stroke-width="2.2" stroke-linecap="round"/>
+
+                <!-- Subtle intersection markers -->
+                <g id="intersectionMarkers" fill="#c4b5a5" opacity="0.7">
+                    <circle cx="55" cy="55" r="5"/><circle cx="210" cy="55" r="5"/><circle cx="365" cy="55" r="5"/>
+                    <circle cx="55" cy="210" r="5"/><circle cx="210" cy="210" r="5"/><circle cx="365" cy="210" r="5"/>
+                    <circle cx="55" cy="365" r="5"/><circle cx="210" cy="365" r="5"/><circle cx="365" cy="365" r="5"/>
+                </g>
+
+                <!-- Pieces group -->
+                <g id="piecesGroup"></g>
+
+                <!-- Valid move indicators -->
+                <g id="validMovesGroup"></g>
+            </svg>
+        </div>
+
+        <!-- Buttons -->
+        <div class="btn-row">
+            <button class="btn btn-reset" id="btnReset" title="Return to settings">⚙ Reset</button>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div class="overlay" id="settingsOverlay">
+        <div class="overlay-panel" id="settingsPanel">
+            <h2>🎯 Moving Tic-Tac-Toe</h2>
+
+            <div>
+                <h3>Top Player Color</h3>
+                <div class="color-row" id="topColorRow"></div>
+            </div>
+
+            <div>
+                <h3>Bottom Player Color</h3>
+                <div class="color-row" id="bottomColorRow"></div>
+            </div>
+
+            <div class="toggle-row">
+                <span class="toggle-label">👥 Two Players / 🖥 vs Computer</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggleTwoPlayer" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-row">
+                <span class="toggle-label">First Move: <strong id="firstMoveLabel">Top</strong></span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggleFirstMove">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-row">
+                <span class="toggle-label">🔄 Series (alternating first moves)</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggleSeries">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="record-display" id="recordDisplay">
+                📊 Series Record — <span>Top: <strong id="recTop">0</strong></span> | <span>Bottom: <strong id="recBottom">0</strong></span>
+            </div>
+
+            <button class="btn btn-start" id="btnStart">▶ Start Game</button>
+        </div>
+    </div>
+
+    <!-- Game Over Banner -->
+    <div class="game-over-banner hidden" id="gameOverBanner">
+        <div class="winner-text" id="winnerText"></div>
+        <button class="btn btn-new-game" id="btnNextGame">Next Game ▶</button>
+        <button class="btn btn-reset" id="btnGoSettings">⚙ Settings</button>
+    </div>
+
+    <script>
+        (function() {
+            // ──────────────────────────────────────
+            // CONSTANTS
+            // ──────────────────────────────────────
+            const COLORS = [
+                '#E74C3C', '#2980B9', '#27AE60', '#E67E22',
+                '#8E44AD', '#16A085', '#E91E63', '#F39C12'
+            ];
+            const COLOR_NAMES = [
+                'Red', 'Blue', 'Green', 'Orange',
+                'Purple', 'Teal', 'Pink', 'Gold'
+            ];
+
+            // Board positions (row, col) -> index = row*3 + col
+            // SVG coordinates for each position index 0..8
+            const POS_COORDS = [
+                { x: 55, y: 55 }, // 0: (0,0) top-left
+                { x: 210, y: 55 }, // 1: (0,1) top-middle
+                { x: 365, y: 55 }, // 2: (0,2) top-right
+                { x: 55, y: 210 }, // 3: (1,0) middle-left
+                { x: 210, y: 210 }, // 4: (1,1) center
+                { x: 365, y: 210 }, // 5: (1,2) middle-right
+                { x: 55, y: 365 }, // 6: (2,0) bottom-left
+                { x: 210, y: 365 }, // 7: (2,1) bottom-middle
+                { x: 365, y: 365 }, // 8: (2,2) bottom-right
+            ];
+
+            // Adjacency list (by position index)
+            const ADJACENCY = [
+                [1, 3, 4], // 0
+                [0, 2, 4], // 1
+                [1, 5, 4], // 2
+                [0, 6, 4], // 3
+                [0, 1, 2, 3, 5, 6, 7, 8], // 4 (center)
+                [2, 8, 4], // 5
+                [3, 7, 4], // 6
+                [6, 8, 4], // 7
+                [5, 7, 4], // 8
+            ];
+
+            // All lines of 3 (for win checking) – each is an array of 3 position indices
+            const WIN_LINES = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8], // horizontals
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8], // verticals
+                [0, 4, 8],
+                [2, 4, 6], // diagonals
+            ];
+
+            // ──────────────────────────────────────
+            // DOM ELEMENTS
+            // ──────────────────────────────────────
+            const settingsOverlay = document.getElementById('settingsOverlay');
+            const boardSvg = document.getElementById('boardSvg');
+            const piecesGroup = document.getElementById('piecesGroup');
+            const validMovesGroup = document.getElementById('validMovesGroup');
+            const topIndicator = document.getElementById('topIndicator');
+            const bottomIndicator = document.getElementById('bottomIndicator');
+            const topDot = document.getElementById('topDot');
+            const bottomDot = document.getElementById('bottomDot');
+            const topScoreEl = document.getElementById('topScore');
+            const bottomScoreEl = document.getElementById('bottomScore');
+            const turnArrow = document.getElementById('turnArrow');
+            const btnReset = document.getElementById('btnReset');
+            const btnStart = document.getElementById('btnStart');
+            const gameOverBanner = document.getElementById('gameOverBanner');
+            const winnerText = document.getElementById('winnerText');
+            const btnNextGame = document.getElementById('btnNextGame');
+            const btnGoSettings = document.getElementById('btnGoSettings');
+            const toggleTwoPlayer = document.getElementById('toggleTwoPlayer');
+            const toggleFirstMove = document.getElementById('toggleFirstMove');
+            const toggleSeries = document.getElementById('toggleSeries');
+            const firstMoveLabel = document.getElementById('firstMoveLabel');
+            const recTop = document.getElementById('recTop');
+            const recBottom = document.getElementById('recBottom');
+            const topColorRow = document.getElementById('topColorRow');
+            const bottomColorRow = document.getElementById('bottomColorRow');
+            const recordDisplay = document.getElementById('recordDisplay');
+
+            // ──────────────────────────────────────
+            // STATE
+            // ──────────────────────────────────────
+            let topColorIndex = 0; // default red
+            let bottomColorIndex = 2; // default green
+            let isTwoPlayer = true;
+            let firstMoveTop = true; // true = top goes first
+            let seriesMode = false;
+            let seriesFirstMoveTop = true; // tracks current first-move in series
+            let winsTop = 0;
+            let winsBottom = 0;
+            let gameActive = false;
+            let boardState = []; // null | 'top' | 'bottom' for each of 9 positions
+            let currentTurn = 'top'; // 'top' or 'bottom'
+            let selectedPiecePos = null; // index of selected piece, or null
+            let validMoves = []; // array of valid destination indices
+            let gameOver = false;
+            let computerThinking = false;
+
+            // ──────────────────────────────────────
+            // FUNCTIONS
+            // ──────────────────────────────────────
+            function resetBoard() {
+                boardState = Array(9).fill(null);
+                boardState[0] = 'top';
+                boardState[1] = 'top';
+                boardState[2] = 'top';
+                boardState[6] = 'bottom';
+                boardState[7] = 'bottom';
+                boardState[8] = 'bottom';
+                selectedPiecePos = null;
+                validMoves = [];
+                gameOver = false;
+                computerThinking = false;
+            }
+
+            function getPlayerPieces(player) {
+                const pieces = [];
+                for (let i = 0; i < 9; i++) {
+                    if (boardState[i] === player) pieces.push(i);
+                }
+                return pieces;
+            }
+
+            function getValidMoves(fromPos) {
+                const player = boardState[fromPos];
+                if (!player) return [];
+                const moves = [];
+                for (const adj of ADJACENCY[fromPos]) {
+                    if (boardState[adj] === null) {
+                        moves.push(adj);
+                    }
+                }
+                return moves;
+            }
+
+            function hasAnyValidMove(player) {
+                const pieces = getPlayerPieces(player);
+                for (const pos of pieces) {
+                    if (getValidMoves(pos).length > 0) return true;
+                }
+                return false;
+            }
+
+            function checkWin(player) {
+                const pieces = getPlayerPieces(player);
+                if (pieces.length !== 3) return false;
+                // Sort for easy comparison
+                const pieceSet = new Set(pieces);
+                for (const line of WIN_LINES) {
+                    if (line.every(idx => pieceSet.has(idx))) {
+                        // Check if this is the excluded starting row
+                        if (player === 'top' && line[0] === 0 && line[1] === 1 && line[2] === 2) {
+                            continue; // top starting row excluded
+                        }
+                        if (player === 'bottom' && line[0] === 6 && line[1] === 7 && line[2] === 8) {
+                            continue; // bottom starting row excluded
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function getComputerMove() {
+                const pieces = getPlayerPieces('top');
+                const allMoves = [];
+                for (const pos of pieces) {
+                    const moves = getValidMoves(pos);
+                    for (const dest of moves) {
+                        allMoves.push({ from: pos, to: dest });
+                    }
+                }
+                if (allMoves.length === 0) return null;
+
+                // Priority 1: Win
+                for (const move of allMoves) {
+                    const saved = boardState[move.to];
+                    boardState[move.to] = 'top';
+                    boardState[move.from] = null;
+                    const wins = checkWin('top');
+                    boardState[move.from] = 'top';
+                    boardState[move.to] = saved;
+                    if (wins) return move;
+                }
+
+                // Priority 2: Block opponent win
+                for (const move of allMoves) {
+                    const saved = boardState[move.to];
+                    boardState[move.to] = 'top';
+                    boardState[move.from] = null;
+                    // Check if bottom could win after this move (simulate bottom's best)
+                    let bottomCanWin = false;
+                    const bottomPieces = getPlayerPieces('bottom');
+                    for (const bPos of bottomPieces) {
+                        const bMoves = getValidMoves(bPos);
+                        for (const bDest of bMoves) {
+                            const saved2 = boardState[bDest];
+                            boardState[bDest] = 'bottom';
+                            boardState[bPos] = null;
+                            if (checkWin('bottom')) bottomCanWin = true;
+                            boardState[bPos] = 'bottom';
+                            boardState[bDest] = saved2;
+                            if (bottomCanWin) break;
+                        }
+                        if (bottomCanWin) break;
+                    }
+                    boardState[move.from] = 'top';
+                    boardState[move.to] = saved;
+                    if (!bottomCanWin) {
+                        // This move prevents bottom from winning next turn, strongly prefer it
+                        // But check if it's a good block
+                    }
+                }
+
+                // Block opponent: check if opponent has 2 in a line and can win next turn
+                const bottomPieces = getPlayerPieces('bottom');
+                for (const bPos of bottomPieces) {
+                    const bMoves = getValidMoves(bPos);
+                    for (const bDest of bMoves) {
+                        const saved = boardState[bDest];
+                        boardState[bDest] = 'bottom';
+                        boardState[bPos] = null;
+                        const wouldWin = checkWin('bottom');
+                        boardState[bPos] = 'bottom';
+                        boardState[bDest] = saved;
+                        if (wouldWin) {
+                            // Opponent can win from bPos->bDest, try to block by occupying bDest
+                            for (const move of allMoves) {
+                                if (move.to === bDest) return move;
+                            }
+                            // Or move the threatened piece if it's adjacent to bDest... 
+                            // Simplified: try to occupy the winning spot
+                        }
+                    }
+                }
+
+                // Priority 3: Move toward center or create threats
+                const scoredMoves = allMoves.map(move => {
+                    let score = 0;
+                    // Prefer moving to center
+                    if (move.to === 4) score += 3;
+                    // Prefer moves that put piece on a line with another friendly piece
+                    const otherPieces = pieces.filter(p => p !== move.from);
+                    for (const line of WIN_LINES) {
+                        if (line.includes(move.to)) {
+                            const friendlyOnLine = otherPieces.filter(p => line.includes(p)).length;
+                            score += friendlyOnLine * 2;
+                        }
+                    }
+                    // Slight randomness
+                    score += Math.random() * 0.5;
+                    return { move, score };
+                });
+                scoredMoves.sort((a, b) => b.score - a.score);
+                return scoredMoves[0].move;
+            }
+
+            function executeMove(fromPos, toPos) {
+                const player = boardState[fromPos];
+                boardState[toPos] = player;
+                boardState[fromPos] = null;
+            }
+
+            function switchTurn() {
+                currentTurn = currentTurn === 'top' ? 'bottom' : 'top';
+            }
+
+            function endGame(winner) {
+                gameOver = true;
+                selectedPiecePos = null;
+                validMoves = [];
+                if (winner === 'top') {
+                    winsTop++;
+                } else if (winner === 'bottom') {
+                    winsBottom++;
+                }
+                updateUI();
+                showGameOverBanner(winner);
+                if (seriesMode) {
+                    seriesFirstMoveTop = !seriesFirstMoveTop;
+                }
+            }
+
+            function showGameOverBanner(winner) {
+                if (winner === 'top') {
+                    winnerText.textContent = '🏆 Top Player Wins!';
+                    winnerText.style.color = COLORS[topColorIndex];
+                } else if (winner === 'bottom') {
+                    winnerText.textContent = '🏆 Bottom Player Wins!';
+                    winnerText.style.color = COLORS[bottomColorIndex];
+                } else {
+                    winnerText.textContent = '🤝 Stalemate!';
+                    winnerText.style.color = '#ccc';
+                }
+                gameOverBanner.classList.remove('hidden');
+            }
+
+            function hideGameOverBanner() {
+                gameOverBanner.classList.add('hidden');
+            }
+
+            function startNewGame() {
+                resetBoard();
+                hideGameOverBanner();
+                if (seriesMode) {
+                    currentTurn = seriesFirstMoveTop ? 'top' : 'bottom';
+                } else {
+                    currentTurn = firstMoveTop ? 'top' : 'bottom';
+                }
+                gameActive = true;
+                gameOver = false;
+                selectedPiecePos = null;
+                validMoves = [];
+                computerThinking = false;
+                updateUI();
+                renderBoard();
+                // If computer goes first
+                if (!isTwoPlayer && currentTurn === 'top') {
+                    scheduleComputerMove();
+                }
+            }
+
+            function scheduleComputerMove() {
+                if (gameOver || !gameActive || isTwoPlayer) return;
+                if (currentTurn !== 'top') return;
+                computerThinking = true;
+                updateUI();
+                renderBoard();
+                setTimeout(() => {
+                    if (!gameActive || gameOver || currentTurn !== 'top') {
+                        computerThinking = false;
+                        updateUI();
+                        renderBoard();
+                        return;
+                    }
+                    const move = getComputerMove();
+                    if (move) {
+                        executeMove(move.from, move.to);
+                        if (checkWin('top')) {
+                            renderBoard();
+                            updateUI();
+                            endGame('top');
+                            computerThinking = false;
+                            return;
+                        }
+                        switchTurn();
+                    } else {
+                        // No moves available for computer
+                        if (!hasAnyValidMove('top')) {
+                            renderBoard();
+                            updateUI();
+                            endGame('bottom'); // computer can't move, bottom wins
+                            computerThinking = false;
+                            return;
+                        }
+                    }
+                    computerThinking = false;
+                    updateUI();
+                    renderBoard();
+                    // Check if bottom (human) has any moves
+                    if (!hasAnyValidMove('bottom')) {
+                        endGame('top');
+                    }
+                }, 500 + Math.random() * 400);
+            }
+
+            function handlePieceClick(posIndex) {
+                if (!gameActive || gameOver || computerThinking) return;
+                if (boardState[posIndex] !== currentTurn) return;
+                if (isTwoPlayer === false && currentTurn === 'top') return; // computer's turn
+
+                // If already selected, allow toggling to another own piece
+                if (selectedPiecePos === posIndex) {
+                    // Deselect
+                    selectedPiecePos = null;
+                    validMoves = [];
+                    renderBoard();
+                    updateUI();
+                    return;
+                }
+
+                // Select this piece
+                if (boardState[posIndex] === currentTurn) {
+                    selectedPiecePos = posIndex;
+                    validMoves = getValidMoves(posIndex);
+                    renderBoard();
+                    updateUI();
+                }
+            }
+
+            function handleValidMoveClick(destIndex) {
+                if (!gameActive || gameOver || computerThinking) return;
+                if (selectedPiecePos === null) return;
+                if (!validMoves.includes(destIndex)) return;
+                if (boardState[selectedPiecePos] !== currentTurn) return;
+                if (isTwoPlayer === false && currentTurn === 'top') return;
+
+                // Execute move
+                executeMove(selectedPiecePos, destIndex);
+                const movedPlayer = currentTurn;
+
+                // Check win
+                if (checkWin(movedPlayer)) {
+                    selectedPiecePos = null;
+                    validMoves = [];
+                    renderBoard();
+                    updateUI();
+                    endGame(movedPlayer);
+                    return;
+                }
+
+                switchTurn();
+                selectedPiecePos = null;
+                validMoves = [];
+                renderBoard();
+                updateUI();
+
+                // Check if new current player has moves
+                if (!hasAnyValidMove(currentTurn)) {
+                    const other = currentTurn === 'top' ? 'bottom' : 'top';
+                    endGame(other);
+                    return;
+                }
+
+                // Schedule computer move if applicable
+                if (!isTwoPlayer && currentTurn === 'top' && !gameOver) {
+                    scheduleComputerMove();
+                }
+            }
+
+            function handleBoardClick(e) {
+                if (!gameActive || gameOver || computerThinking) return;
+                // Click on empty area deselects
+                const target = e.target;
+                if (target.closest('[data-piece]') || target.closest('[data-valid]')) return;
+                selectedPiecePos = null;
+                validMoves = [];
+                renderBoard();
+                updateUI();
+            }
+
+            function renderBoard() {
+                piecesGroup.innerHTML = '';
+                validMovesGroup.innerHTML = '';
+
+                const pieceRadius = 20;
+
+                // Draw pieces
+                for (let i = 0; i < 9; i++) {
+                    if (boardState[i] === null) continue;
+                    const coords = POS_COORDS[i];
+                    const player = boardState[i];
+                    const color = player === 'top' ? COLORS[topColorIndex] : COLORS[bottomColorIndex];
+                    const isSelected = (i === selectedPiecePos);
+
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', coords.x);
+                    circle.setAttribute('cy', coords.y);
+                    circle.setAttribute('r', pieceRadius);
+                    circle.setAttribute('fill', color);
+                    circle.setAttribute('stroke', '#fff');
+                    circle.setAttribute('stroke-width', isSelected ? '4' : '2');
+                    circle.setAttribute('data-piece', i);
+                    circle.setAttribute('data-player', player);
+                    circle.style.cursor = (player === currentTurn && !computerThinking && !gameOver && (isTwoPlayer ||
+                        player === 'bottom')) ? 'pointer' : 'default';
+                    circle.style.filter = isSelected ? 'drop-shadow(0 0 8px rgba(255,255,255,0.8))' :
+                        'drop-shadow(0 3px 4px rgba(0,0,0,0.35))';
+                    circle.style.transition = 'all 0.2s ease';
+
+                    if (isSelected) {
+                        circle.setAttribute('r', pieceRadius + 2);
+                    }
+
+                    circle.addEventListener('click', (evt) => {
+                        evt.stopPropagation();
+                        handlePieceClick(i);
+                    });
+                    circle.addEventListener('touchend', (evt) => {
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        handlePieceClick(i);
+                    });
+
+                    piecesGroup.appendChild(circle);
+                }
+
+                // Draw valid move indicators
+                for (const idx of validMoves) {
+                    const coords = POS_COORDS[idx];
+                    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    dot.setAttribute('cx', coords.x);
+                    dot.setAttribute('cy', coords.y);
+                    dot.setAttribute('r', 9);
+                    dot.setAttribute('fill', '#1a1a1a');
+                    dot.setAttribute('stroke', '#fff');
+                    dot.setAttribute('stroke-width', '1.5');
+                    dot.setAttribute('data-valid', idx);
+                    dot.style.cursor = 'pointer';
+                    dot.style.filter = 'drop-shadow(0 2px 3px rgba(0,0,0,0.5))';
+                    dot.style.transition = 'all 0.15s ease';
+                    dot.addEventListener('click', (evt) => {
+                        evt.stopPropagation();
+                        handleValidMoveClick(idx);
+                    });
+                    dot.addEventListener('touchend', (evt) => {
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        handleValidMoveClick(idx);
+                    });
+                    validMovesGroup.appendChild(dot);
+                }
+            }
+
+            function updateUI() {
+                // Update indicators
+                topDot.style.backgroundColor = COLORS[topColorIndex];
+                bottomDot.style.backgroundColor = COLORS[bottomColorIndex];
+                topScoreEl.textContent = winsTop;
+                bottomScoreEl.textContent = winsBottom;
+
+                // Active player highlight
+                topIndicator.classList.remove('active-player');
+                bottomIndicator.classList.remove('active-player');
+                if (gameActive && !gameOver) {
+                    if (currentTurn === 'top') {
+                        topIndicator.classList.add('active-player');
+                    } else {
+                        bottomIndicator.classList.add('active-player');
+                    }
+                }
+
+                // Turn arrow
+                if (gameActive && !gameOver && !computerThinking) {
+                    turnArrow.style.opacity = '1';
+                    turnArrow.textContent = currentTurn === 'top' ? '▲' : '▼';
+                    turnArrow.style.color = currentTurn === 'top' ? COLORS[topColorIndex] : COLORS[bottomColorIndex];
+                } else if (computerThinking) {
+                    turnArrow.style.opacity = '1';
+                    turnArrow.textContent = '⏳';
+                    turnArrow.style.color = '#f0c040';
+                } else {
+                    turnArrow.style.opacity = '0.4';
+                    turnArrow.textContent = '•';
+                    turnArrow.style.color = '#888';
+                }
+
+                // Update record display
+                recTop.textContent = winsTop;
+                recBottom.textContent = winsBottom;
+            }
+
+            function updateSettingsUI() {
+                // Update first move label
+                firstMoveLabel.textContent = firstMoveTop ? 'Top' : 'Bottom';
+                toggleFirstMove.checked = !firstMoveTop;
+                toggleTwoPlayer.checked = isTwoPlayer;
+                toggleSeries.checked = seriesMode;
+                updateColorSwatches();
+                updateUI();
+            }
+
+            function updateColorSwatches() {
+                // Top color row
+                topColorRow.innerHTML = '';
+                COLORS.forEach((color, idx) => {
+                    const swatch = document.createElement('div');
+                    swatch.className = 'color-swatch';
+                    if (idx === topColorIndex) swatch.classList.add('selected');
+                    swatch.style.backgroundColor = color;
+                    swatch.title = COLOR_NAMES[idx];
+                    swatch.addEventListener('click', () => {
+                        if (idx === bottomColorIndex) return; // can't select same as bottom
+                        topColorIndex = idx;
+                        if (bottomColorIndex === topColorIndex) {
+                            bottomColorIndex = (topColorIndex + 1) % COLORS.length;
+                        }
+                        updateColorSwatches();
+                        updateUI();
+                        renderBoard();
+                    });
+                    topColorRow.appendChild(swatch);
+                });
+
+                // Bottom color row
+                bottomColorRow.innerHTML = '';
+                COLORS.forEach((color, idx) => {
+                    const swatch = document.createElement('div');
+                    swatch.className = 'color-swatch';
+                    if (idx === bottomColorIndex) swatch.classList.add('selected');
+                    if (idx === topColorIndex) swatch.classList.add('disabled');
+                    swatch.style.backgroundColor = color;
+                    swatch.title = COLOR_NAMES[idx];
+                    if (idx !== topColorIndex) {
+                        swatch.addEventListener('click', () => {
+                            bottomColorIndex = idx;
+                            updateColorSwatches();
+                            updateUI();
+                            renderBoard();
+                        });
+                    }
+                    bottomColorRow.appendChild(swatch);
+                });
+            }
+
+            function resetAllSettings() {
+                topColorIndex = 0;
+                bottomColorIndex = 2;
+                isTwoPlayer = true;
+                firstMoveTop = true;
+                seriesMode = false;
+                seriesFirstMoveTop = true;
+                winsTop = 0;
+                winsBottom = 0;
+                gameActive = false;
+                gameOver = false;
+                selectedPiecePos = null;
+                validMoves = [];
+                computerThinking = false;
+                currentTurn = 'top';
+                resetBoard();
+                updateSettingsUI();
+                renderBoard();
+                hideGameOverBanner();
+                settingsOverlay.classList.remove('hidden');
+                gameOverBanner.classList.add('hidden');
+            }
+
+            function goToSettings() {
+                gameActive = false;
+                gameOver = false;
+                selectedPiecePos = null;
+                validMoves = [];
+                computerThinking = false;
+                resetBoard();
+                updateSettingsUI();
+                renderBoard();
+                hideGameOverBanner();
+                settingsOverlay.classList.remove('hidden');
+            }
+
+            // ──────────────────────────────────────
+            // EVENT LISTENERS
+            // ──────────────────────────────────────
+            btnStart.addEventListener('click', () => {
+                settingsOverlay.classList.add('hidden');
+                seriesFirstMoveTop = firstMoveTop;
+                winsTop = 0;
+                winsBottom = 0;
+                resetBoard();
+                currentTurn = firstMoveTop ? 'top' : 'bottom';
+                gameActive = true;
+                gameOver = false;
+                selectedPiecePos = null;
+                validMoves = [];
+                computerThinking = false;
+                updateUI();
+                renderBoard();
+                hideGameOverBanner();
+                if (!isTwoPlayer && currentTurn === 'top') {
+                    scheduleComputerMove();
+                }
+            });
+
+            btnReset.addEventListener('click', () => {
+                goToSettings();
+            });
+
+            btnGoSettings.addEventListener('click', () => {
+                goToSettings();
+            });
+
+            btnNextGame.addEventListener('click', () => {
+                hideGameOverBanner();
+                resetBoard();
+                if (seriesMode) {
+                    currentTurn = seriesFirstMoveTop ? 'top' : 'bottom';
+                } else {
+                    currentTurn = firstMoveTop ? 'top' : 'bottom';
+                }
+                gameActive = true;
+                gameOver = false;
+                selectedPiecePos = null;
+                validMoves = [];
+                computerThinking = false;
+                updateUI();
+                renderBoard();
+                if (!isTwoPlayer && currentTurn === 'top') {
+                    scheduleComputerMove();
+                }
+            });
+
+            toggleTwoPlayer.addEventListener('change', () => {
+                isTwoPlayer = toggleTwoPlayer.checked;
+                winsTop = 0;
+                winsBottom = 0;
+                seriesFirstMoveTop = firstMoveTop;
+                updateSettingsUI();
+                updateUI();
+            });
+
+            toggleFirstMove.addEventListener('change', () => {
+                firstMoveTop = !toggleFirstMove.checked;
+                seriesFirstMoveTop = firstMoveTop;
+                updateSettingsUI();
+            });
+
+            toggleSeries.addEventListener('change', () => {
+                seriesMode = toggleSeries.checked;
+                if (!seriesMode) {
+                    seriesFirstMoveTop = firstMoveTop;
+                }
+                updateSettingsUI();
+            });
+
+            // Board background click to deselect
+            boardSvg.addEventListener('click', handleBoardClick);
+
+            // ──────────────────────────────────────
+            // INITIALIZATION
+            // ──────────────────────────────────────
+            function init() {
+                resetBoard();
+                updateColorSwatches();
+                updateSettingsUI();
+                renderBoard();
+                updateUI();
+                settingsOverlay.classList.remove('hidden');
+                gameOverBanner.classList.add('hidden');
+                gameActive = false;
+                gameOver = false;
+                topIndicator.classList.remove('active-player');
+                bottomIndicator.classList.remove('active-player');
+                turnArrow.style.opacity = '0.4';
+                turnArrow.textContent = '•';
+                turnArrow.style.color = '#888';
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>
+```
+### Game Features
+
+Here’s how the game works, the available controls, and how the computer opponent thinks.
+
+- **Core Game Logic:** The game is played on a special 3x3 board with diagonal lines. Each player starts with three pieces on their home row (top or bottom). On your turn, you **tap one of your pieces**, and the board highlights all adjacent empty spots connected by a line (like a black dot). Tap a dot to move. You win by aligning your three pieces in any straight line (horizontal, vertical, or diagonal), **except** your original starting row. The center spot connects to all eight surrounding spots, while corners connect to three neighbors.
+
+- **Interaction & Feedback:** The interface provides clear, real-time feedback. The **active player's indicator** glows and pulses. When you select a piece, it gets a white glow, and valid moves appear as black dots. A turn arrow points to the current player. The game board and pieces are rendered smoothly with SVG graphics.
+
+- **Computer Opponent (AI):** In single-player mode, the computer controls the **top pieces**. Its strategy is layered: it will prioritize **winning moves**, then **blocking your winning moves**, then making moves that create threats or move toward the center of the board. A short, randomized delay makes the AI's turns feel natural.
+
+- **Settings & Series Mode:** Before starting, you can set each player's color, toggle between **two-player** and **vs. computer**, and choose who goes first. The **"Series" toggle** enables a best-of-many mode where the first move alternates after each game, and a local scoreboard tracks wins for each side. The score resets whenever you switch between 1P and 2P mode.
 
 
 -------------------------------------
