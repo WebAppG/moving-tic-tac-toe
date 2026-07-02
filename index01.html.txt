@@ -1,0 +1,28 @@
+
+
+
+-------------------------------------
+
+prompt
+
+please create a one-page webapp board game called "Moving Tic-Tac-Toe".  the game is for two players, or one player and one computer.  the game board has three vertical lines, three horizontal lines, and two diagonal lines connecting the corners of the square. the left and right vertical lines, together with top and bottom horizontal lines, make a square. The game board needs to show the square and lines inside the square.  the intersections of the lines are the places where the pieces can be placed.  at the beginning of the game, each of the two players start with three round pieces.  one player controls the three pieces on the bottom row.  the other player or computer controls the three pieces on the top row.  the players take turns to move.  each player move is moving one of pieces that the player control, to an adjacent empty spot connected by a line.  if there is no line connecting two spots, the piece cannot move in that direction.  For example, the middle top spot piece cannot move to the middle left spot.  after the player click or tap on the piece that is to be moved, the board should show a black dot on the empty spots that the piece can go.  the game ends when one of the players can move their pieces so that the three pieces align in a straight line, horizontal, vertical, or diagonal.  the only alignment that does not win the game is the original places where the three pieces start, which is the bottom row for the bottom player, and top row for the top player.  before the game begins, the players can go into a settings page overlaid on screen where they can choose a color for their own pieces, from a list of eight distinct colors.  There are choices for the top player and the same choices for the bottom player except the color that is chosen by the top player.  For the color already chosen by the top player, that color is greyed out for the bottom player.  the beginning screen overlay should also have a toggle switch for selecting whether it is a two player game or one player against the computer.  another toggle switch is needed for selecting first move from top or bottom player.  another toggle switch for selecting whether it is going to be a series of games with alternating first moves.  a local record of series of game indicates the number of wins from top and bottom players.  this record is reset to zero when the toggle for one or two players is toggled.  There is a start button so the game can start and there need not any settings to display when the game is in progress.  After the reset button is clicked, the game should go back to the beginning where there is an overlay settings screen for players to choose colors and other settings.
+
+-------------------------------------
+
+deepseek response:
+
+Here is a complete, one-page HTML document for the "Moving Tic-Tac-Toe" game board. You can run it directly in your browser to play.
+
+
+Gameplay & Setup
+You'll control pieces on a 3x3 grid, aiming to align them while blocking your opponent. The game includes several key features to customize your experience.
+
+Movement & Turns: Click or tap a piece you own to see valid moves (shown as black dots). Then click a highlighted spot to move. Players alternate turns.
+
+Game Modes: Use the toggles to switch between two-player and single-player (vs. computer) modes. You can also set who moves first and enable a series mode to track wins across multiple games.
+
+Customization & Tracking: Before starting, choose unique colors for each player's pieces from the palette. The scoreboard tracks wins for both players, and the series record resets when you change the game mode.
+
+
+
+-------------------------------------
