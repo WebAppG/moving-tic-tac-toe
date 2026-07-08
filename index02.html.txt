@@ -1,0 +1,10 @@
+
+
+Try to hand fix the grey-out color selection for top player.
+
+Fixed.
+
+
+-------------------------------------
+
+-------------------------------------
